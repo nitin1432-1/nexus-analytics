@@ -1,40 +1,32 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import Stripe from 'stripe'
-import { headers } from 'next/headers'
-import { createClient } from '@/utils/supabase/server'
 
-// FIXED: This MUST match the version in your error log exactly
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-01-27.acacia', 
-})
+export async function loginAction(formData: FormData) {
+  // Simulate network delay for realism
+  await new Promise((resolve) => setTimeout(resolve, 1000))
 
-export async function createCheckoutSession(priceId: string) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return redirect('/login')
-  }
-
-  const session = await stripe.checkout.sessions.create({
-    customer_email: user.email,
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-    mode: 'subscription',
-    success_url: `${(await headers()).get('origin')}/dashboard?success=true`,
-    cancel_url: `${(await headers()).get('origin')}/?canceled=true`,
-    metadata: {
-      userId: user.id,
-    },
+  const email = formData.get('email')
+  
+  // In a real app, you would validate password against a DB here.
+  
+  // FIXED: In Next.js 15, cookies() is a Promise, so we must 'await' it
+  const cookieStore = await cookies()
+  
+  cookieStore.set('nexus_session', 'true', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 7, // 1 week
+    path: '/',
   })
 
-  if (session.url) {
-    redirect(session.url)
-  }
+  redirect('/dashboard')
+}
+
+export async function logoutAction() {
+  // FIXED: await cookies() here too
+  const cookieStore = await cookies()
+  cookieStore.delete('nexus_session')
+  redirect('/')
 }
