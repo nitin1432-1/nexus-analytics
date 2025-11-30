@@ -5,8 +5,9 @@ import Stripe from 'stripe'
 import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 
+// FIXED: This MUST match the version in your error log exactly
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-01-27.acacia', 
 })
 
 export async function createCheckoutSession(priceId: string) {
@@ -17,7 +18,6 @@ export async function createCheckoutSession(priceId: string) {
     return redirect('/login')
   }
 
-  // 1. Create a Checkout Session
   const session = await stripe.checkout.sessions.create({
     customer_email: user.email,
     line_items: [
@@ -27,14 +27,13 @@ export async function createCheckoutSession(priceId: string) {
       },
     ],
     mode: 'subscription',
-    success_url: `${headers().get('origin')}/dashboard?success=true`,
-    cancel_url: `${headers().get('origin')}/?canceled=true`,
+    success_url: `${(await headers()).get('origin')}/dashboard?success=true`,
+    cancel_url: `${(await headers()).get('origin')}/?canceled=true`,
     metadata: {
       userId: user.id,
     },
   })
 
-  // 2. Redirect user to Stripe
   if (session.url) {
     redirect(session.url)
   }
