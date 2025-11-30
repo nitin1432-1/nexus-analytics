@@ -10,10 +10,11 @@ export async function loginAction(formData: FormData) {
   const email = formData.get('email')
   
   // In a real app, you would validate password against a DB here.
-  // For this demo, we accept any email to allow you to test it easily.
   
-  // Create a secure, HTTP-only cookie
-  cookies().set('nexus_session', 'true', {
+  // FIXED: In Next.js 15, cookies() is a Promise, so we must 'await' it
+  const cookieStore = await cookies()
+  
+  cookieStore.set('nexus_session', 'true', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     maxAge: 60 * 60 * 24 * 7, // 1 week
@@ -24,6 +25,8 @@ export async function loginAction(formData: FormData) {
 }
 
 export async function logoutAction() {
-  cookies().delete('nexus_session')
+  // FIXED: await cookies() here too
+  const cookieStore = await cookies()
+  cookieStore.delete('nexus_session')
   redirect('/')
 }
