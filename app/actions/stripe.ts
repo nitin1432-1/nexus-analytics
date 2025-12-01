@@ -11,7 +11,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 export async function createCheckoutSession(priceId: string) {
-  const supabase = createClient()
+  // FIXED: Added 'await' here for Next.js 15 async cookies
+  const supabase = await createClient()
+  
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
